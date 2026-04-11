@@ -1,0 +1,7 @@
+{
+  "name": "flux-vm-ts",
+  "version": "0.1.0",
+  "description": "TypeScript FLUX Virtual Machine — bytecode execution in Node.js and browsers",
+  "main": "src/vm.ts",
+  "license": "MIT"
+}

@@ -1,0 +1,126 @@
+/**
+ * FLUX Bytecode Opcodes — Variable-length encoding (1-8 bytes).
+ * Matching the Python flux-runtime ISA exactly.
+ * All languages compile to this universal instruction set.
+ */
+
+export enum Op {
+  // Control flow (0x00-0x07)
+  NOP = 0x00,
+  MOV = 0x01,
+  LOAD = 0x02,
+  STORE = 0x03,
+  JMP = 0x04,
+  JZ = 0x05,
+  JNZ = 0x06,
+  CALL = 0x07,
+
+  // Integer arithmetic (0x08-0x0F)
+  IADD = 0x08,
+  ISUB = 0x09,
+  IMUL = 0x0A,
+  IDIV = 0x0B,
+  IMOD = 0x0C,
+  INEG = 0x0D,
+  INC = 0x0E,
+  DEC = 0x0F,
+
+  // Bitwise (0x10-0x17)
+  IAND = 0x10,
+  IOR = 0x11,
+  IXOR = 0x12,
+  INOT = 0x13,
+  ISHL = 0x14,
+  ISHR = 0x15,
+  ROTL = 0x16,
+  ROTR = 0x17,
+
+  // Comparison (0x18-0x1F)
+  ICMP = 0x18,
+  IEQ = 0x19,
+  ILT = 0x1A,
+  ILE = 0x1B,
+  IGT = 0x1C,
+  IGE = 0x1D,
+  TEST = 0x1E,
+  SETCC = 0x1F,
+
+  // Stack ops (0x20-0x27)
+  PUSH = 0x20,
+  POP = 0x21,
+  DUP = 0x22,
+  SWAP = 0x23,
+  ROT = 0x24,
+  ENTER = 0x25,
+  LEAVE = 0x26,
+  ALLOCA = 0x27,
+
+  // Function ops (0x28-0x2F)
+  RET = 0x28,
+  CALL_IND = 0x29,
+  TAILCALL = 0x2A,
+  MOVI = 0x2B,
+  IREM = 0x2C,
+  CMP = 0x2D,
+  JE = 0x2E,
+  JNE = 0x2F,
+
+  // Memory mgmt (0x30-0x37)
+  REGION_CREATE = 0x30,
+  REGION_DESTROY = 0x31,
+  REGION_TRANSFER = 0x32,
+  MEMCOPY = 0x33,
+  MEMSET = 0x34,
+  MEMCMP = 0x35,
+  JL = 0x36,
+  JGE = 0x37,
+
+  // Type ops (0x38-0x3F)
+  CAST = 0x38,
+  BOX = 0x39,
+  UNBOX = 0x3A,
+  CHECK_TYPE = 0x3B,
+  CHECK_BOUNDS = 0x3C,
+
+  // Float arithmetic (0x40-0x47)
+  FADD = 0x40,
+  FSUB = 0x41,
+  FMUL = 0x42,
+  FDIV = 0x43,
+  FNEG = 0x44,
+  FABS = 0x45,
+  FMIN = 0x46,
+  FMAX = 0x47,
+
+  // Float comparison (0x48-0x4F)
+  FEQ = 0x48,
+  FLT = 0x49,
+  FLE = 0x4A,
+  FGT = 0x4B,
+  FGE = 0x4C,
+
+  // String ops (0x50-0x57)
+  SLEN = 0x50,
+  SCONCAT = 0x51,
+  SCHAR = 0x52,
+  SSUB = 0x53,
+  SCMP = 0x54,
+
+  // A2A Agent Protocol (0x60-0x7F)
+  TELL = 0x60,
+  ASK = 0x61,
+  DELEGATE = 0x62,
+  BROADCAST = 0x63,
+  TRUST_CHECK = 0x64,
+  CAPABILITY_REQ = 0x65,
+
+  // System (0xFE-0xFF)
+  PRINT = 0xFE,
+  HALT = 0xFF,
+}
+
+/** Reverse lookup: number → opcode name */
+export const OP_NAMES: Record<number, string> = {};
+for (const [name, code] of Object.entries(Op)) {
+  OP_NAMES[code as number] = name;
+}
