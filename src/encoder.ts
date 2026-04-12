@@ -20,11 +20,10 @@ export function encodeAssembly(assembly: string): {
   labels: Map<string, number>;
 } {
   const lines = assembly.split("\n");
-  const labels = new Map<string, number>();
+  const labelIndices = new Map<string, number>(); // label → instruction index (temp)
   const rawLines: { line: string; lineNum: number }[] = [];
-  const instructions: EncodedInstruction[] = [];
 
-  // First pass: collect labels and lines
+  // First pass: collect labels (by instruction index) and raw instruction lines
   let idx = 0;
   for (let i = 0; i < lines.length; i++) {
     const trimmed = lines[i].trim();
@@ -33,7 +32,7 @@ export function encodeAssembly(assembly: string): {
     // Label detection
     if (trimmed.endsWith(":")) {
       const labelName = trimmed.slice(0, -1).trim();
-      labels.set(labelName, idx);
+      labelIndices.set(labelName, idx);
       continue;
     }
 
@@ -41,8 +40,30 @@ export function encodeAssembly(assembly: string): {
     idx++;
   }
 
-  // Second pass: encode
+  // Size pass: encode each instruction (labels unresolved) to get byte sizes
+  const sizes: number[] = [];
+  for (const { line } of rawLines) {
+    const encoded = encodeLine(line, labelIndices);
+    sizes.push(encoded.bytes.length);
+  }
+
+  // Convert instruction indices to byte offsets
+  const idxToByteOffset = new Map<number, number>();
+  let byteOffset = 0;
+  for (let i = 0; i < sizes.length; i++) {
+    idxToByteOffset.set(i, byteOffset);
+    byteOffset += sizes[i];
+  }
+
+  // Build final label map with byte offsets
+  const labels = new Map<string, number>();
+  for (const [name, instrIdx] of labelIndices) {
+    labels.set(name, idxToByteOffset.get(instrIdx) ?? instrIdx);
+  }
+
+  // Final encode pass: encode with corrected byte-offset labels
   const bytes: number[] = [];
+  const instructions: EncodedInstruction[] = [];
   for (const { line } of rawLines) {
     const offset = bytes.length;
     const encoded = encodeLine(line, labels);
@@ -56,8 +77,6 @@ export function encodeAssembly(assembly: string): {
     });
   }
 
-  // Third pass: resolve forward jump labels
-  // (simple two-pass: we already have labels from first pass)
   return {
     bytecode: new Uint8Array(bytes),
     instructions,
@@ -173,15 +192,24 @@ function encodeLine(line: string, labels: Map<string, number>): LineEncode {
       return { bytes: [op, ra, rb], operands: [ra, rb], mnemonic };
     }
 
-    // Conditional jumps: JZ R0, label
+    // Conditional jumps: JZ R0, label / JE label / JNZ R0, label
     case Op.JZ:
-    case Op.JNZ:
+    case Op.JNZ: {
+      const r = parseReg(args[0]);
+      const target = args[1];
+      const addr = labels.get(target) ?? parseImm(target);
+      return { bytes: [op, r, addr & 0xff, (addr >> 8) & 0xff], operands: [r, addr], mnemonic };
+    }
+
+    // Flag-based conditional jumps: JE label / JNE label / JL label / JGE label
     case Op.JE:
     case Op.JNE:
     case Op.JL:
     case Op.JGE: {
-      const r = parseReg(args[0]);
-      const target = args[1];
+      // Support both `JE R0, label` (register byte ignored) and `JE label`
+      const hasReg = args.length >= 2 && args[0].match(/^R\d+$/i);
+      const r = hasReg ? parseReg(args[0]) : 0;
+      const target = hasReg ? args[1] : args[0];
       const addr = labels.get(target) ?? parseImm(target);
       return { bytes: [op, r, addr & 0xff, (addr >> 8) & 0xff], operands: [r, addr], mnemonic };
     }

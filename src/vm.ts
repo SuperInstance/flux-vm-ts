@@ -292,6 +292,24 @@ export class FluxVM {
           break;
         }
 
+        case Op.ISHL: {
+          const rd = this.bytecode[this.pc + 1];
+          const ra = this.bytecode[this.pc + 2];
+          const rb = this.bytecode[this.pc + 3];
+          this.writeReg(rd, this.readReg(ra) << this.readReg(rb));
+          this.pc += 4;
+          break;
+        }
+
+        case Op.ISHR: {
+          const rd = this.bytecode[this.pc + 1];
+          const ra = this.bytecode[this.pc + 2];
+          const rb = this.bytecode[this.pc + 3];
+          this.writeReg(rd, this.readReg(ra) >> this.readReg(rb));
+          this.pc += 4;
+          break;
+        }
+
         // Jumps
         case Op.JMP: {
           const addr = this.readU16(this.pc + 1);
